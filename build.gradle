@@ -1,0 +1,29 @@
+
+plugins {
+    id 'java-library'
+}
+
+repositories {
+//    maven {
+//        url 'https://maven.aliyun.com/repository/public/'
+//    }
+    mavenCentral()
+}
+
+apply plugin: 'java-library'
+
+group = "1brc"
+version = "1.0.0"
+
+sourceCompatibility = "21"
+targetCompatibility = "21"
+//JavaVersion.VERSION_17
+
+compileJava {
+    options.encoding = 'UTF-8'
+    // options.compilerArgs << '-parameters'
+     options.compilerArgs += ['--enable-preview','-parameters',
+     '--add-modules=jdk.incubator.vector']
+}
+dependencies {
+}
