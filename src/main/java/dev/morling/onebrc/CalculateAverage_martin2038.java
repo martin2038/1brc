@@ -139,9 +139,12 @@ public class CalculateAverage_martin2038 {
     }
 
     static List<FileChunk> split(RandomAccessFile file) throws IOException {
-        var threadNum = Runtime.getRuntime().availableProcessors();
         long total = file.length();
+        var threadNum = Math.max((int) (total / Integer.MAX_VALUE + 1), Runtime.getRuntime().availableProcessors());
         long avgChunkSize = total / threadNum;
+        // System.out.println(avgChunkSize +" \t avgChunkSize : INT/MAX \t"+Integer.MAX_VALUE);
+        // Exception in thread "main" java.lang.IllegalArgumentException: Size exceeds Integer.MAX_VALUE
+        // at java.base/sun.nio.ch.FileChannelImpl.map(FileChannelImpl.java:1183)
         long lastStart = 0;
         var list = new ArrayList<FileChunk>(threadNum);
         for (var i = 0; i < threadNum - 1; i++) {
