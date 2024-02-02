@@ -1,458 +1,58 @@
-# 1️⃣🐝🏎️ The One Billion Row Challenge
 
-_Status Jan 12: As there has been such a large number of entries to this challenge so far (100+), and this is becoming hard to manage, please only create new submissions if you expect them to run in 10 seconds or less on the evaluation machine._
+## 1. create file , 12/3GB
 
-_Status Jan 1: This challenge is [open for submissions](https://www.morling.dev/blog/one-billion-row-challenge/)!_
+```bash
+jbang src/main/java/dev/morling/onebrc/CreateMeasurementsFast.java 1000000000
+jbang src/main/java/dev/morling/onebrc/CreateMeasurements3.java 1000000000
+Created file with 1,000,000,000 measurements in 22335 ms
 
-The One Billion Row Challenge (1BRC) is a fun exploration of how far modern Java can be pushed for aggregating one billion rows from a text file.
-Grab all your (virtual) threads, reach out to SIMD, optimize your GC, or pull any other trick, and create the fastest implementation for solving this task!
-
-<img src="1brc.png" alt="1BRC" style="display: block; margin-left: auto; margin-right: auto; margin-bottom:1em; width: 50%;">
-
-The text file contains temperature values for a range of weather stations.
-Each row is one measurement in the format `<string: station name>;<double: measurement>`, with the measurement value having exactly one fractional digit.
-The following shows ten rows as an example:
-
-```
-Hamburg;12.0
-Bulawayo;8.9
-Palembang;38.8
-St. John's;15.2
-Cracow;12.6
-Bridgetown;26.9
-Istanbul;6.2
-Roseau;34.4
-Conakry;31.2
-Istanbul;23.0
+ls -lah measurements.txt
+-rw-r--r--  1 martin  staff    13G Jan 30 12:00 measurements.txt
 ```
 
-The task is to write a Java program which reads the file, calculates the min, mean, and max temperature value per weather station, and emits the results on stdout like this
-(i.e. sorted alphabetically by station name, and the result values per station in the format `<min>/<mean>/<max>`, rounded to one fractional digit):
+## 2. baseline
+
+```bash
+jbang src/main/java/dev/morling/onebrc/CalculateAverage_baseline.java
+jbang src/main/java/dev/morling/onebrc/CalculateAverage_martin2038.java
+```
+
+```txt
+cost : 187843 ms
+{Abha=-32.2/18.0/68.8, Abidjan=-28.0/26.0/72.7, Abéché=-19.2/29.4/77.5, Accra=-21.2/26.4/78.8, Addis Ababa=-33.9/16.0/68.8, Adelaide=-37.7/17.3/69.6, Aden=-20.5/29.1/80.0, Ahvaz=-25.0/25.4/75.3, Albuquerque=-36.7/14.0/62.9, Alexandra=-41.5/11.0/58.0, Alexandria=-28.7/20.0/71.4, Algiers=-33.2/18.2/69.4, Alice Springs=-30.3/21.0/71.4, Almaty=-37.7/10.0/62.1, Amsterdam=-38.7/10.2/64.3, Anadyr=-55.5/-6.9/45.7, Anchorage=-47.3/2.8/50.3, Andorra la Vella=-39.8/9.8/61.0, Ankara=-34.4/12.0/61.8, Antananarivo=-31.1/17.9/67.4, Antsiranana=-26.1/25.2/74.7, Arkhangelsk=-50.7/1.3/51.9, Ashgabat=-32.2/17.1/67.7, Asmara=-35.3/15.6/64.6, Assab=-19.7/30.5/82.1, Astana=-43.9/3.5/56.2, Athens=-28.2/19.2/68.5, Atlanta=-33.4/17.0/74.4, Auckland=-35.4/15.2/64.3, Austin=-30.5/20.7/76.8, Baghdad=-25.8/22.8/75.0, Baguio=-27.4/19.5/70.2, Baku=-33.7/15.1/66.1, Baltimore=-37.6/13.1/63.2, Bamako=-23.3/27.8/76.0, Bangkok=-18.8/28.6/83.3, Bangui=-26.2/26.0/77.6, Banjul=-25.3/26.0/74.2, Barcelona=-31.0/18.2/71.5, Bata=-25.5/25.1/76.1, Batumi=-35.0/14.0/61.2, Beijing=-39.0/12.9/61.9, Beirut=-28.9/20.9/68.3, Belgrade=-36.4/12.5/61.4, Belize City=-20.2/26.7/78.3, Benghazi=-32.8/19.9/68.7, Bergen=-45.9/7.7/56.8, Berlin=-36.6/10.3/58.3, Bilbao=-39.1/14.7/64.9, Birao=-23.8/26.5/81.9, Bishkek=-37.1/11.3/60.5, Bissau=-29.1/27.0/74.7, Blantyre=-28.8/22.2/69.9, Bloemfontein=-35.1/15.6/77.2, Boise=-38.6/11.4/60.4, Bordeaux=-35.5/14.2/62.3, Bosaso=-21.4/30.0/84.1, Boston=-35.6/10.9/62.7, Bouaké=-22.4/26.0/72.8, Bratislava=-42.2/10.5/59.6, Brazzaville=-27.0/25.0/73.8, Bridgetown=-22.8/27.0/74.0, Brisbane=-28.6/21.4/75.2, Brussels=-40.9/10.5/62.8, Bucharest=-39.9/10.8/60.8, Budapest=-37.1/11.3/63.9, Bujumbura=-29.2/23.8/74.0, Bulawayo=-34.1/18.9/78.8, Burnie=-36.6/13.1/60.1, Busan=-35.4/15.0/62.6, Cabo San Lucas=-25.3/23.9/76.2, Cairns=-24.1/25.0/77.8, Cairo=-27.0/21.4/70.3, Calgary=-46.9/4.4/54.5, Canberra=-36.9/13.1/62.6, Cape Town=-33.2/16.2/66.7, Changsha=-34.1/17.4/68.9, Charlotte=-35.8/16.1/62.2, Chiang Mai=-22.6/25.8/79.8, Chicago=-39.4/9.8/61.3, Chihuahua=-36.2/18.6/68.0, Chittagong=-25.8/25.9/79.4, Chișinău=-40.4/10.2/63.0, Chongqing=-30.4/18.6/75.0, Christchurch=-37.8/12.2/60.9, City of San Marino=-39.2/11.8/65.0, Colombo=-21.9/27.4/82.7, Columbus=-36.8/11.7/57.7, Conakry=-19.9/26.4/76.4, Copenhagen=-43.2/9.1/59.5, Cotonou=-25.8/27.2/76.4, Cracow=-45.9/9.3/65.3, Da Lat=-29.5/17.9/70.0, Da Nang=-27.1/25.8/72.9, Dakar=-26.2/24.0/72.8, Dallas=-31.0/19.0/70.2, Damascus=-31.4/17.0/65.9, Dampier=-23.7/26.4/76.2, Dar es Salaam=-24.5/25.8/76.4, Darwin=-26.5/27.6/78.4, Denpasar=-27.5/23.7/77.9, Denver=-39.1/10.4/63.2, Detroit=-40.1/10.0/64.6, Dhaka=-22.2/25.9/78.9, Dikson=-60.9/-11.1/38.8, Dili=-22.7/26.6/76.9, Djibouti=-17.2/29.9/79.5, Dodoma=-27.7/22.7/76.4, Dolisie=-24.6/24.0/74.9, Douala=-23.6/26.7/76.4, Dubai=-20.9/26.9/76.5, Dublin=-45.8/9.8/61.0, Dunedin=-36.5/11.1/61.0, Durban=-30.2/20.6/75.3, Dushanbe=-33.7/14.7/63.6, Edinburgh=-41.6/9.3/59.9, Edmonton=-45.5/4.2/54.2, El Paso=-34.4/18.1/67.6, Entebbe=-25.8/21.0/70.6, Erbil=-29.8/19.5/67.3, Erzurum=-42.6/5.1/52.4, Fairbanks=-51.0/-2.3/47.3, Fianarantsoa=-33.2/17.9/67.0, Flores,  Petén=-22.7/26.4/80.2, Frankfurt=-39.9/10.6/60.7, Fresno=-29.7/17.9/65.4, Fukuoka=-38.0/17.0/68.2, Gaborone=-29.7/21.0/69.2, Gabès=-32.4/19.5/68.0, Gagnoa=-23.4/26.0/74.5, Gangtok=-35.1/15.2/66.9, Garissa=-20.1/29.3/77.5, Garoua=-18.8/28.3/81.2, George Town=-20.5/27.9/85.4, Ghanzi=-27.5/21.4/70.0, Gjoa Haven=-63.1/-14.4/39.0, Guadalajara=-26.5/20.9/67.7, Guangzhou=-29.5/22.4/70.2, Guatemala City=-27.9/20.4/72.2, Halifax=-44.2/7.5/58.3, Hamburg=-40.0/9.7/57.8, Hamilton=-34.3/13.8/67.0, Hanga Roa=-26.7/20.5/72.9, Hanoi=-33.3/23.6/71.7, Harare=-30.7/18.4/66.2, Harbin=-46.0/5.0/52.8, Hargeisa=-31.7/21.7/73.5, Hat Yai=-23.3/27.0/74.3, Havana=-23.3/25.2/70.9, Helsinki=-42.1/5.9/54.3, Heraklion=-31.9/18.9/70.6, Hiroshima=-35.1/16.3/66.2, Ho Chi Minh City=-20.8/27.4/77.8, Hobart=-37.2/12.7/63.0, Hong Kong=-30.9/23.3/70.9, Honiara=-26.0/26.5/74.6, Honolulu=-21.6/25.4/78.9, Houston=-27.2/20.8/72.6, Ifrane=-39.1/11.4/65.8, Indianapolis=-36.7/11.8/59.6, Iqaluit=-59.7/-9.3/37.4, Irkutsk=-47.7/1.0/55.6, Istanbul=-35.9/13.9/63.1, Jacksonville=-30.8/20.3/74.2, Jakarta=-23.6/26.7/78.2, Jayapura=-23.0/27.0/77.3, Jerusalem=-36.7/18.3/71.4, Johannesburg=-34.7/15.5/64.3, Jos=-26.1/22.8/73.4, Juba=-24.5/27.8/79.3, Kabul=-35.9/12.1/65.7, Kampala=-27.6/20.0/75.1, Kandi=-21.1/27.7/76.8, Kankan=-22.4/26.5/76.1, Kano=-23.1/26.4/80.5, Kansas City=-39.5/12.5/63.6, Karachi=-26.5/26.0/77.7, Karonga=-22.6/24.4/74.7, Kathmandu=-33.5/18.3/69.1, Khartoum=-22.4/29.9/77.0, Kingston=-21.7/27.4/75.2, Kinshasa=-25.3/25.3/74.3, Kolkata=-25.0/26.7/74.0, Kuala Lumpur=-22.7/27.3/74.3, Kumasi=-22.5/26.0/74.5, Kunming=-35.7/15.7/72.6, Kuopio=-46.2/3.4/56.6, Kuwait City=-22.5/25.7/76.5, Kyiv=-44.6/8.4/58.3, Kyoto=-33.1/15.8/66.5, La Ceiba=-30.0/26.2/74.2, La Paz=-24.7/23.7/75.8, Lagos=-24.8/26.8/76.4, Lahore=-28.9/24.3/76.6, Lake Havasu City=-26.4/23.7/73.8, Lake Tekapo=-41.7/8.7/60.5, Las Palmas de Gran Canaria=-29.9/21.2/70.1, Las Vegas=-30.9/20.3/69.6, Launceston=-37.5/13.1/60.8, Lhasa=-41.2/7.6/57.9, Libreville=-24.2/25.9/73.7, Lisbon=-37.6/17.5/70.9, Livingstone=-25.8/21.8/72.7, Ljubljana=-39.2/10.9/58.7, Lodwar=-20.6/29.3/77.7, Lomé=-25.6/26.9/75.6, London=-37.9/11.3/59.4, Los Angeles=-30.1/18.6/67.6, Louisville=-37.9/13.9/69.0, Luanda=-21.8/25.8/73.8, Lubumbashi=-29.7/20.8/72.2, Lusaka=-36.9/19.9/68.7, Luxembourg City=-41.3/9.3/62.0, Lviv=-43.7/7.8/56.0, Lyon=-39.8/12.5/60.9, Madrid=-36.7/15.0/64.1, Mahajanga=-24.6/26.3/77.1, Makassar=-21.9/26.7/79.0, Makurdi=-24.9/26.0/78.9, Malabo=-24.7/26.3/75.5, Malé=-24.4/28.0/77.8, Managua=-23.4/27.3/79.1, Manama=-24.7/26.5/75.7, Mandalay=-19.4/28.0/76.4, Mango=-25.7/28.1/79.6, Manila=-19.1/28.4/77.1, Maputo=-27.7/22.8/71.6, Marrakesh=-31.1/19.6/70.6, Marseille=-40.8/15.8/66.1, Maun=-24.7/22.4/73.6, Medan=-21.5/26.5/77.6, Mek'ele=-26.0/22.7/73.5, Melbourne=-32.6/15.1/64.0, Memphis=-30.2/17.2/67.1, Mexicali=-27.7/23.1/80.5, Mexico City=-32.3/17.5/71.9, Miami=-20.7/24.9/72.9, Milan=-37.6/13.0/65.2, Milwaukee=-41.4/8.9/56.4, Minneapolis=-44.1/7.8/63.4, Minsk=-42.7/6.7/56.6, Mogadishu=-29.1/27.1/77.4, Mombasa=-27.8/26.3/80.3, Monaco=-29.5/16.4/67.4, Moncton=-43.1/6.1/55.0, Monterrey=-29.2/22.3/73.8, Montreal=-41.6/6.8/53.9, Moscow=-43.3/5.8/53.7, Mumbai=-23.3/27.1/84.6, Murmansk=-50.6/0.6/55.8, Muscat=-27.1/28.0/81.4, Mzuzu=-32.3/17.7/68.6, N'Djamena=-20.4/28.3/79.9, Naha=-26.0/23.1/72.8, Nairobi=-31.7/17.8/68.8, Nakhon Ratchasima=-23.4/27.3/77.9, Napier=-35.0/14.6/66.3, Napoli=-31.9/15.9/67.2, Nashville=-35.2/15.4/68.9, Nassau=-32.8/24.6/74.7, Ndola=-29.2/20.3/74.5, New Delhi=-23.5/25.0/77.1, New Orleans=-29.8/20.7/67.8, New York City=-34.0/12.9/63.9, Ngaoundéré=-24.8/22.0/76.2, Niamey=-19.1/29.3/79.6, Nicosia=-32.3/19.7/71.6, Niigata=-36.1/13.9/65.4, Nouadhibou=-24.9/21.3/70.2, Nouakchott=-24.3/25.7/74.1, Novosibirsk=-48.6/1.7/50.9, Nuuk=-55.3/-1.4/49.5, Odesa=-41.9/10.7/59.2, Odienné=-29.9/26.0/74.4, Oklahoma City=-32.3/15.9/67.8, Omaha=-37.4/10.6/60.7, Oranjestad=-22.3/28.1/77.4, Oslo=-42.5/5.7/57.4, Ottawa=-44.6/6.6/57.8, Ouagadougou=-21.2/28.3/81.8, Ouahigouya=-19.7/28.6/77.6, Ouarzazate=-28.8/18.9/67.7, Oulu=-50.9/2.7/49.1, Palembang=-21.2/27.3/76.7, Palermo=-30.2/18.5/71.2, Palm Springs=-25.7/24.5/74.3, Palmerston North=-36.5/13.2/60.9, Panama City=-24.3/28.0/76.6, Parakou=-25.7/26.8/75.9, Paris=-37.9/12.3/59.2, Perth=-30.5/18.7/66.5, Petropavlovsk-Kamchatsky=-46.0/1.9/50.0, Philadelphia=-39.3/13.2/64.5, Phnom Penh=-24.6/28.3/79.9, Phoenix=-29.3/23.9/74.0, Pittsburgh=-39.5/10.8/59.5, Podgorica=-37.7/15.3/67.6, Pointe-Noire=-26.3/26.1/78.1, Pontianak=-24.1/27.7/79.2, Port Moresby=-24.8/26.9/79.8, Port Sudan=-29.5/28.4/84.5, Port Vila=-27.0/24.3/76.6, Port-Gentil=-22.7/26.0/76.2, Portland (OR)=-36.1/12.4/62.2, Porto=-35.0/15.7/64.8, Prague=-39.7/8.4/56.5, Praia=-22.9/24.4/76.9, Pretoria=-29.1/18.2/66.6, Pyongyang=-38.2/10.8/66.3, Rabat=-33.2/17.2/65.3, Rangpur=-26.1/24.4/71.0, Reggane=-19.6/28.3/75.2, Reykjavík=-45.8/4.3/55.4, Riga=-42.8/6.2/55.7, Riyadh=-26.0/26.0/78.1, Rome=-39.2/15.2/63.0, Roseau=-22.1/26.2/73.9, Rostov-on-Don=-39.7/9.9/59.1, Sacramento=-33.8/16.3/66.4, Saint Petersburg=-53.1/5.8/54.9, Saint-Pierre=-43.1/5.7/57.4, Salt Lake City=-37.3/11.6/59.8, San Antonio=-31.4/20.8/68.3, San Diego=-30.2/17.8/67.7, San Francisco=-34.8/14.6/60.7, San Jose=-31.6/16.4/64.2, San José=-25.1/22.6/72.3, San Juan=-25.0/27.2/73.6, San Salvador=-26.0/23.1/75.0, Sana'a=-29.4/20.0/69.7, Santo Domingo=-24.7/25.9/76.9, Sapporo=-39.1/8.9/60.4, Sarajevo=-39.4/10.1/59.6, Saskatoon=-53.0/3.3/53.6, Seattle=-37.5/11.3/61.3, Seoul=-38.1/12.5/63.3, Seville=-31.3/19.2/67.5, Shanghai=-33.2/16.7/65.7, Singapore=-24.9/27.0/80.4, Skopje=-35.7/12.4/59.7, Sochi=-37.1/14.2/65.6, Sofia=-40.2/10.6/63.3, Sokoto=-22.6/28.0/73.5, Split=-34.7/16.1/65.4, St. John's=-42.6/5.0/54.7, St. Louis=-36.9/13.9/59.7, Stockholm=-44.1/6.6/58.6, Surabaya=-22.3/27.1/78.2, Suva=-24.6/25.6/75.2, Suwałki=-40.8/7.2/55.8, Sydney=-39.7/17.7/66.5, Ségou=-22.0/28.0/74.7, Tabora=-29.1/23.0/76.1, Tabriz=-34.6/12.6/62.2, Taipei=-24.9/23.0/72.8, Tallinn=-45.1/6.4/53.3, Tamale=-22.1/27.9/79.7, Tamanrasset=-27.5/21.7/74.4, Tampa=-24.6/22.9/69.7, Tashkent=-34.0/14.8/70.1, Tauranga=-34.6/14.8/63.7, Tbilisi=-37.7/12.9/62.2, Tegucigalpa=-28.2/21.7/72.1, Tehran=-33.4/17.0/67.6, Tel Aviv=-30.2/20.0/72.0, Thessaloniki=-37.6/16.0/64.6, Thiès=-24.4/24.0/72.9, Tijuana=-31.1/17.8/66.8, Timbuktu=-21.6/28.0/78.8, Tirana=-41.7/15.2/67.3, Toamasina=-29.7/23.4/71.9, Tokyo=-35.9/15.4/64.7, Toliara=-28.0/24.1/73.7, Toluca=-37.5/12.4/61.1, Toronto=-36.8/9.4/58.6, Tripoli=-29.5/20.0/67.8, Tromsø=-43.3/2.9/52.2, Tucson=-28.9/20.9/69.2, Tunis=-30.6/18.4/67.3, Ulaanbaatar=-48.1/-0.4/49.7, Upington=-25.7/20.4/79.1, Vaduz=-39.2/10.1/58.7, Valencia=-34.5/18.3/71.7, Valletta=-30.7/18.8/65.9, Vancouver=-38.1/10.4/61.2, Veracruz=-23.9/25.4/75.4, Vienna=-37.7/10.4/60.1, Vientiane=-31.3/25.9/76.5, Villahermosa=-23.7/27.1/79.6, Vilnius=-44.1/6.0/53.5, Virginia Beach=-37.7/15.8/66.6, Vladivostok=-44.2/4.9/53.9, Warsaw=-40.2/8.5/60.9, Washington, D.C.=-41.7/14.6/64.8, Wau=-21.2/27.8/77.7, Wellington=-36.8/12.9/66.1, Whitehorse=-49.2/-0.1/51.1, Wichita=-35.1/13.9/63.2, Willemstad=-23.6/28.0/76.0, Winnipeg=-44.5/3.0/52.6, Wrocław=-42.6/9.6/59.0, Xi'an=-35.4/14.1/63.8, Yakutsk=-57.6/-8.8/39.7, Yangon=-20.9/27.5/81.0, Yaoundé=-26.5/23.8/73.9, Yellowknife=-53.8/-4.3/43.4, Yerevan=-37.4/12.4/63.6, Yinchuan=-41.1/9.0/59.3, Zagreb=-40.6/10.7/59.6, Zanzibar City=-26.3/26.0/80.0, Zürich=-42.1/9.3/59.0, Ürümqi=-44.0/7.4/57.6, İzmir=-32.0/17.9/70.5}
+670230376
+```
+
+## profile
+
+```bash
+jbang --javaagent=ap-loader@jvm-profiling-tools/ap-loader=start,event=cpu,file=profile.html  src/main/java/dev/morling/onebrc/CalculateAverage_martin2038.java
+
+
+export JAVA_TOOL_OPTIONS="-Dhttp.proxyHost=127.0.0.1 -Dhttp.proxyPort=1088 -Dhttps.proxyHost=127.0.0.1 -Dhttps.proxyPort=1088"
+
 
 ```
-{Abha=-23.0/18.0/59.2, Abidjan=-16.2/26.0/67.3, Abéché=-10.0/29.4/69.0, Accra=-10.1/26.4/66.4, Addis Ababa=-23.7/16.0/67.0, Adelaide=-27.8/17.3/58.5, ...}
+
+##  持续优化
+
+```bash
+hyperfine --warmup 2 --runs 10 'jbang src/main/java/dev/morling/onebrc/CalculateAverage_martin2038.java'
 ```
 
-Submit your implementation by Jan 31 2024 and become part of the leaderboard!
-
-## Results
-
-These are the results from running all entries into the challenge on eight cores of a [Hetzner AX161](https://www.hetzner.com/dedicated-rootserver/ax161) dedicated server (32 core AMD EPYC™ 7502P (Zen2), 128 GB RAM).
-
-| # | Result (m:s.ms) | Implementation     | JDK | Submitter     | Notes     |
-|---|-----------------|--------------------|-----|---------------|-----------|
-| 1 | 00:01.878 | [link](https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_thomaswue.java)| 21.0.2-graal | [Thomas Wuerthinger](https://github.com/thomaswue), [Quan Anh Mai](https://github.com/merykitty), [Alfonso² Peterssen](https://github.com/mukel) | GraalVM native binary, uses Unsafe |
-| 2 | 00:01.926 | [link](https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_artsiomkorzun.java)| 21.0.2-graal | [Artsiom Korzun](https://github.com/artsiomkorzun) | GraalVM native binary, uses Unsafe |
-| 3 | 00:01.970 | [link](https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_abeobk.java)| 21.0.2-graal | [Van Phu DO](https://github.com/abeobk) | GraalVM native binary, uses Unsafe |
-|   | 00:02.081 | [link](https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_jerrinot.java)| 21.0.2-graal | [Jaromir Hamala](https://github.com/jerrinot) | GraalVM native binary, uses Unsafe |
-|   | 00:02.157 | [link](https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_royvanrijn.java)| 21.0.2-graal | [Roy van Rijn](https://github.com/royvanrijn) | GraalVM native binary, uses Unsafe |
-|   | 00:02.188 | [link](https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_serkan_ozal.java)| 21.0.1-open | [Serkan ÖZAL](https://github.com/serkan-ozal) | uses Unsafe |
-|   | 00:02.205 | [link](https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_tivrfoa.java)| 21.0.2-graal | [tivrfoa](https://github.com/tivrfoa) | GraalVM native binary, uses Unsafe |
-|   | 00:02.319 | [link](https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_yavuztas.java)| 21.0.2-graal | [Yavuz Tas](https://github.com/yavuztas) | GraalVM native binary, uses Unsafe |
-|   | 00:02.332 | [link](https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_mtopolnik.java)| 21.0.2-graal | [Marko Topolnik](https://github.com/mtopolnik) | GraalVM native binary, uses Unsafe |
-|   | 00:02.575 | [link](https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_merykittyunsafe.java)| 21.0.1-open | [Quan Anh Mai](https://github.com/merykitty) | uses Unsafe |
-|   | 00:02.984 | [link](https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_yourwass.java)| 21.0.1-open | [yourwass](https://github.com/yourwass) | uses Unsafe |
-|   | 00:03.013 | [link](https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_linl33.java)| 22.ea.31-open | [Li Lin](https://github.com/linl33) | uses Unsafe |
-|   | 00:03.258 | [link](https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_merykitty.java)| 21.0.1-open | [Quan Anh Mai](https://github.com/merykitty) |  |
-|   | 00:03.298 | [link](https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_vemanaNonIdiomatic.java)| 21.0.1-graal | [Subrahmanyam (non-idiomatic)](https://github.com/vemana) | uses Unsafe |
-|   | 00:03.431 | [link](https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_roman_r_m.java)| 21.0.1-graal | [Roman Musin](https://github.com/roman-r-m) | GraalVM native binary, uses Unsafe |
-|   | 00:03.518 | [link](https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_JamalMulla.java)| 21.0.1-graal | [Jamal Mulla](https://github.com/JamalMulla) | GraalVM native binary, uses Unsafe |
-|   | 00:03.698 | [link](https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_hundredwatt.java)| 21.0.1-graal | [Jason Nochlin](https://github.com/hundredwatt) |  |
-|   | 00:03.718 | [link](https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_zerninv.java)| 21.0.1-graal | [zerninv](https://github.com/zerninv) | uses Unsafe |
-|   | 00:03.824 | [link](https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_gonix.java)| 21.0.1-open | [gonix](https://github.com/gonix) |  |
-|   | 00:03.854 | [link](https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_ebarlas.java)| 21.0.1-graal | [Elliot Barlas](https://github.com/ebarlas) | uses Unsafe |
-|   | 00:03.902 | [link](https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_jparera.java)| 21.0.1-open | [Juan Parera](https://github.com/jparera) |  |
-|   | 00:03.966 | [link](https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_jincongho.java)| 21.0.1-open | [Jin Cong Ho](https://github.com/jincongho) | uses Unsafe |
-|   | 00:04.066 | [link](https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_JesseVanRooy.java)| 21.0.1-open | [JesseVanRooy](https://github.com/JesseVanRooy) | uses Unsafe |
-|   | 00:04.101 | [link](https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_JaimePolidura.java)| 21.0.2-graal | [Jaime Polidura](https://github.com/JaimePolidura) | GraalVM native binary, uses Unsafe |
-|   | 00:04.209 | [link](https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_giovannicuccu.java)| 21.0.1-open | [Giovanni Cuccu](https://github.com/giovannicuccu) |  |
-|   | 00:04.230 | [link](https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_iziamos.java)| 21.0.1-open | [John Ziamos](https://github.com/iziamos) | uses Unsafe |
-|   | 00:04.684 | [link](https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_gigiblender.java)| 21.0.1-open | [Florin Blanaru](https://github.com/gigiblender) | uses Unsafe |
-|   | 00:04.741 | [link](https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_cliffclick.java)| 21.0.1-open | [Cliff Click](https://github.com/cliffclick) | uses Unsafe |
-|   | 00:04.800 | [link](https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_parkertimmins.java)| 21.0.1-open | [Parker Timmins](https://github.com/parkertimmins) |  |
-|   | 00:04.884 | [link](https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_shipilev.java)| 21.0.1-open | [Aleksey Shipilëv](https://github.com/shipilev) |  |
-|   | 00:04.920 | [link](https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_vemana.java)| 21.0.1-graal | [Subrahmanyam](https://github.com/vemana) |  |
-|   | 00:05.077 | [link](https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_jonathanaotearoa.java)| 21.0.2-graal | [Jonathan Wright](https://github.com/jonathan-aotearoa) | GraalVM native binary, uses Unsafe |
-|   | 00:05.142 | [link](https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_arjenw.java)| 21.0.1-open | [Arjen Wisse](https://github.com/arjenw) |  |
-|   | 00:05.180 | [link](https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_ianopolousfast.java)| 21.0.1-open | [Dr Ian Preston](https://github.com/ianopolousfast) |  |
-|   | 00:05.235 | [link](https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_unbounded.java)| 21.0.1-open | [unbounded](https://github.com/unbounded) |  |
-|   | 00:05.336 | [link](https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_plevart.java)| 21.0.1-tem | [Peter Levart](https://github.com/plevart) |  |
-|   | 00:05.478 | [link](https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_obourgain.java)| 21.0.1-open | [Olivier Bourgain](https://github.com/obourgain) | uses Unsafe |
-|   | 00:05.705 | [link](https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_gamlerhart.java)| 21.0.1-open | [Roman Stoffel](https://github.com/gamlerhart) |  |
-|   | 00:05.709 | [link](https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_armandino.java)| 21.0.2-graal | [Arman Sharif](https://github.com/armandino) | GraalVM native binary, uses Unsafe |
-|   | 00:05.887 | [link](https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_charlibot.java)| 21.0.1-graal | [Charlie Evans](https://github.com/charlibot) | uses Unsafe |
-|   | 00:05.960 | [link](https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_vaidhy.java)| 21.0.1-graal | [Vaidhy Mayilrangam](https://github.com/vaidhy) | uses Unsafe |
-|   | 00:05.971 | [link](https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_melgenek.java)| 21.0.2-open | [Yevhenii Melnyk](https://github.com/melgenek) |  |
-|   | 00:05.979 | [link](https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_spullara.java)| 21.0.1-graal | [Sam Pullara](https://github.com/spullara) |  |
-|   | 00:06.166 | [link](https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_isolgpus.java)| 21.0.1-open | [Jamie Stansfield](https://github.com/isolgpus) |  |
-|   | 00:06.257 | [link](https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_flippingbits.java)| 21.0.1-graal | [Stefan Sprenger](https://github.com/flippingbits) | uses Unsafe |
-|   | 00:06.576 | [link](https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_as-com.java)| 21.0.1-open | [Andrew Sun](https://github.com/as-com) | uses Unsafe |
-|   | 00:06.635 | [link](https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_justplainlaake.java)| 21.0.1-graal | [Laake Scates-Gervasi](https://github.com/justplainlaake) | GraalVM native binary, uses Unsafe |
-|   | 00:06.654 | [link](https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_jbachorik.java)| 21.0.1-graal | [Jaroslav Bachorik](https://github.com/jbachorik) |  |
-|   | 00:06.715 | [link](https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_algirdasrascius.java)| 21.0.1-open | [Algirdas Raščius](https://github.com/algirdasrascius) |  |
-|   | 00:06.884 | [link](https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_rcasteltrione.java)| 21.0.1-graal | [rcasteltrione](https://github.com/rcasteltrione) |  |
-|   | 00:07.563 | [link](https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_3j5a.java)| 21.0.1-graal | [3j5a](https://github.com/3j5a) |  |
-|   | 00:07.680 | [link](https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_C5H12O5.java)| 21.0.1-graal | [Xylitol](https://github.com/C5H12O5) | uses Unsafe |
-|   | 00:07.730 | [link](https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_jotschi.java)| 21.0.1-open | [Johannes Schüth](https://github.com/jotschi) |  |
-|   | 00:07.894 | [link](https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_tonivade.java)| 21.0.2-tem | [Antonio Muñoz](https://github.com/tonivade) |  |
-|   | 00:07.925 | [link](https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_ricardopieper.java)| 21.0.1-graal | [Ricardo Pieper](https://github.com/ricardopieper) |  |
-|   | 00:08.167 | [link](https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_ddimtirov.java)| 21.0.1-tem | [Dimitar Dimitrov](https://github.com/ddimtirov) |  |
-|   | 00:08.214 | [link](https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_deemkeen.java)| 21.0.1-open | [deemkeen](https://github.com/deemkeen) |  |
-|   | 00:08.255 | [link](https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_mattiz.java)| 21.0.1-open | [Mathias Bjerke](https://github.com/mattiz) |  |
-|   | 00:08.398 | [link](https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_artpar.java)| 21.0.1-open | [Parth Mudgal](https://github.com/artpar) | uses Unsafe |
-|   | 00:08.489 | [link](https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_gnabyl.java)| 21.0.1-graal | [Bang NGUYEN](https://github.com/gnabyl) |  |
-|   | 00:08.517 | [link](https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_ags313.java)| 21.0.1-graal | [ags](https://github.com/ags313) | uses Unsafe |
-|   | 00:08.557 | [link](https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_adriacabeza.java)| 21.0.1-graal | [Adrià Cabeza](https://github.com/adriacabeza) |  |
-|   | 00:08.622 | [link](https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_kuduwa_keshavram.java)| 21.0.1-graal | [Keshavram Kuduwa](https://github.com/kuduwa-keshavram) | uses Unsafe |
-|   | 00:08.752 | [link](https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_anitasv.java)| 21.0.1-graal | [Anita SV](https://github.com/anitasv) |  |
-|   | 00:08.892 | [link](https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_fatroom.java)| 21.0.1-open | [Roman Romanchuk](https://github.com/fatroom) |  |
-|   | 00:09.020 | [link](https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_yemreinci.java)| 21.0.1-open | [yemreinci](https://github.com/yemreinci) |  |
-|   | 00:09.071 | [link](https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_gabrielreid.java)| 21.0.1-open | [Gabriel Reid](https://github.com/gabrielreid) |  |
-|   | 00:09.352 | [link](https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_filiphr.java)| 21.0.1-graal | [Filip Hrisafov](https://github.com/filiphr) |  |
-|   | 00:09.867 | [link](https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_ricardopieper.java)| 21.0.1-graal | [Ricardo Pieper](https://github.com/ricardopieper) |  |
-|   | 00:09.945 | [link](https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_japplis.java)| 21.0.1-open | [Anthony Goubard](https://github.com/japplis) |  |
-|   | 00:10.092 | [link](https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_phd3.java)| 21.0.1-graal | [Pratham](https://github.com/phd3) |  |
-|   | 00:10.127 | [link](https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_artpar.java)| 21.0.1-open | [Parth Mudgal](https://github.com/artpar) | uses Unsafe |
-|   | 00:11.577 | [link](https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_netrunnereve.java)| 21.0.1-open | [Eve](https://github.com/netrunnereve) |  |
-|   | 00:10.473 | [link](https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_raipc.java)| 21.0.1-open | [Anton Rybochkin](https://github.com/raipc) |  |
-|   | 00:11.119 | [link](https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_lawrey.java)| 21.0.1-open | [lawrey](https://github.com/lawrey) |  |
-|   | 00:11.156 | [link](https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_YannMoisan.java)| java | [Yann Moisan](https://github.com/YannMoisan) |  |
-|   | 00:11.167 | [link](https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_palmr.java)| 21.0.1-open | [Nick Palmer](https://github.com/palmr) |  |
-|   | 00:11.352 | [link](https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_karthikeyan97.java)| 21.0.1-open | [karthikeyan97](https://github.com/karthikeyan97) | uses Unsafe |
-|   | 00:11.405 | [link](https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_imrafaelmerino.java)| 21.0.1-graal | [Rafael Merino García](https://github.com/imrafaelmerino) |  |
-|   | 00:11.406 | [link](https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_gabrielfoo.java)| 21.0.1-graal | [gabrielfoo](https://github.com/gabrielfoo) |  |
-|   | 00:11.433 | [link](https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_jatingala.java)| 21.0.1-graal | [Jatin Gala](https://github.com/jatingala) |  |
-|   | 00:11.505 | [link](https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_bufistov.java)| 21.0.1-open | [Dmitry Bufistov](https://github.com/dmitry-midokura) | uses Unsafe |
-|   | 00:11.805 | [link](https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_coolmineman.java)| 21.0.1-graal | [Cool_Mineman](https://github.com/coolmineman) |  |
-|   | 00:11.934 | [link](https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_arjenvaneerde.java)| 21.0.1-open | [arjenvaneerde](https://github.com/arjenvaneerde) |  |
-|   | 00:12.220 | [link](https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_richardstartin.java)| 21.0.1-open | [Richard Startin](https://github.com/richardstartin) |  |
-|   | 00:12.495 | [link](https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_SamuelYvon.java)| 21.0.1-graal | [Samuel Yvon](https://github.com/SamuelYvon) | GraalVM native binary |
-|   | 00:12.568 | [link](https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_MeanderingProgrammer.java)| 21.0.1-graal | [Vlad](https://github.com/MeanderingProgrammer) |  |
-|   | 00:12.736 | [link](https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_anestoruk.java)| 21.0.1-open | [Andrzej Nestoruk](https://github.com/anestoruk) |  |
-|   | 00:12.800 | [link](https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_yonatang.java)| java | [Yonatan Graber](https://github.com/yonatang) |  |
-|   | 00:13.013 | [link](https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_thanhtrinity.java)| 21.0.1-graal | [Thanh Duong](https://github.com/thanhtrinity) |  |
-|   | 00:13.071 | [link](https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_ianopolous.java)| 21.0.1-open | [Dr Ian Preston](https://github.com/ianopolous) |  |
-|   | 00:13.817 | [link](https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_entangled90.java)| 21.0.1-open | [Carlo](https://github.com/entangled90) |  |
-|   | 00:14.502 | [link](https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_eriklumme.java)| 21.0.1-graal | [eriklumme](https://github.com/eriklumme) |  |
-|   | 00:14.772 | [link](https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_kevinmcmurtrie.java)| 21.0.1-open | [Kevin McMurtrie](https://github.com/kevinmcmurtrie) |  |
-|   | 00:14.867 | [link](https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_berry120.java)| 21.0.1-open | [Michael Berry](https://github.com/berry120) |  |
-|   | 00:15.006 | [link](https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_PawelAdamski.java)| java | [Paweł Adamski](https://github.com/PawelAdamski) |  |
-|   | 00:15.662 | [link](https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_semotpan.java)| 21.0.1-open | [Serghei Motpan](https://github.com/semotpan) |  |
-|   | 00:16.063 | [link](https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_makohn.java)| 21.0.1-open | [Marek Kohn](https://github.com/makohn) |  |
-|   | 00:16.457 | [link](https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_bytesfellow.java)| 21.0.1-open | [Aleksei](https://github.com/bytesfellow) |  |
-|   | 00:16.953 | [link](https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_gauravdeshmukh.java)| 21.0.1-open | [Gaurav Anantrao Deshmukh](https://github.com/gauravdeshmukh) |  |
-|   | 00:17.046 | [link](https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_dkarampi.java)| 21.0.1-open | [Dimitris Karampinas](https://github.com/dkarampi) |  |
-|   | 00:17.490 | [link](https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_kgeri.java)| 21.0.1-open | [Gergely Kiss](https://github.com/kgeri) |  |
-|   | 00:17.255 | [link](https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_tkosachev.java)| 21.0.1-open | [tkosachev](https://github.com/tkosachev) |  |
-|   | 00:17.520 | [link](https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_faridtmammadov.java)| 21.0.1-open | [Farid](https://github.com/faridtmammadov) |  |
-|   | 00:17.717 | [link](https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_omarchenko4j.java)| 21.0.1-open | [Oleh Marchenko](https://github.com/omarchenko4j) |  |
-|   | 00:17.815 | [link](https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_hallvard.java)| 21.0.1-open | [Hallvard Trætteberg](https://github.com/hallvard) |  |
-|   | 00:17.932 | [link](https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_plbpietrz.java)| 21.0.1-open | [Bartłomiej Pietrzyk](https://github.com/plbpietrz) |  |
-|   | 00:18.251 | [link](https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_seijikun.java)| 21.0.1-graal | [Markus Ebner](https://github.com/seijikun) |  |
-|   | 00:18.448 | [link](https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_moysesb.java)| 21.0.1-open | [Moysés Borges Furtado](https://github.com/moysesb) |  |
-|   | 00:18.771 | [link](https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_davecom.java)| 21.0.1-graal | [David Kopec](https://github.com/davecom) |  |
-|   | 00:18.902 | [link](https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_maximz101.java)| 21.0.1-graal | [Maxime](https://github.com/maximz101) |  |
-|   | 00:19.357 | [link](https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_truelive.java)| 21.0.1-graalce | [Roman Schweitzer](https://github.com/truelive) |  |
-|   | 00:20.691 | [link](https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_Kidlike.java)| 21.0.1-graal | [Kidlike](https://github.com/Kidlike) | GraalVM native binary |
-|   | 00:21.989 | [link](https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_couragelee.java)| 21.0.1-open | [couragelee](https://github.com/couragelee) |  |
-|   | 00:22.188 | [link](https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_jgrateron.java)| 21.0.1-open | [Jairo Graterón](https://github.com/jgrateron) |  |
-|   | 00:22.334 | [link](https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_albertoventurini.java)| 21.0.1-open | [Alberto Venturini](https://github.com/albertoventurini) |  |
-|   | 00:22.457 | [link](https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_rby.java)| 21.0.1-open | [Ramzi Ben Yahya](https://github.com/rby) |  |
-|   | 00:22.471 | [link](https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_0xshivamagarwal.java)| 21.0.1-open | [Shivam Agarwal](https://github.com/0xshivamagarwal) |  |
-|   | 00:22.687 | [link](https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_PanagiotisDrakatos.java)| 21.0.1-graal | [Panagiotis Drakatos](https://github.com/PanagiotisDrakatos) | GraalVM native binary |
-|   | 00:24.986 | [link](https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_kumarsaurav123.java)| 21.0.1-open | [kumarsaurav123](https://github.com/kumarsaurav123) |  |
-|   | 00:26.500 | [link](https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_felix19350.java)| 21.0.1-open | [Bruno Félix](https://github.com/felix19350) |  |
-|   | 00:28.381 | [link](https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_bjhara.java)| 21.0.1-open | [Hampus](https://github.com/bjhara) |  |
-|   | 00:29.741 | [link](https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_xpmatteo.java)| 21.0.1-open | [Matteo Vaccari](https://github.com/xpmatteo) |  |
-|   | 00:32.018 | [link](https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_padreati.java)| 21.0.1-open | [Aurelian Tutuianu](https://github.com/padreati) |  |
-|   | 00:34.388 | [link](https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_twobiers.java)| 21.0.1-tem | [Tobi](https://github.com/twobiers) |  |
-|   | 00:35.875 | [link](https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_MahmoudFawzyKhalil.java)| 21.0.1-open | [MahmoudFawzyKhalil](https://github.com/MahmoudFawzyKhalil) |  |
-|   | 00:36.180 | [link](https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_hchiorean.java)| 21.0.1-open | [Horia Chiorean](https://github.com/hchiorean) |  |
-|   | 00:36.424 | [link](https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_manishgarg90.java)| java | [Manish Garg](https://github.com/manishgarg90) |  |
-|   | 00:38.340 | [link](https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_AbstractKamen.java)| 21.0.1-open | [AbstractKamen](https://github.com/AbstractKamen) |  |
-|   | 00:41.982 | [link](https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_criccomini.java)| 21.0.1-open | [Chris Riccomini](https://github.com/criccomini) |  |
-|   | 00:42.893 | [link](https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_javamak.java)| 21.0.1-open | [javamak](https://github.com/javamak) |  |
-|   | 00:46.597 | [link](https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_maeda6uiui.java)| 21.0.1-open | [Maeda-san](https://github.com/maeda6uiui) |  |
-|   | 00:58.811 | [link](https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_Ujjwalbharti.java)| 21.0.1-open | [Ujjwal Bharti](https://github.com/Ujjwalbharti) |  |
-|   | 01:05.094 | [link](https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_muditsaxena.java)| 21.0.1-open | [Mudit Saxena](https://github.com/mudit-saxena) |  |
-|   | 01:05.979 | [link](https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_dqhieuu.java)| 21.0.1-graal | [Hieu Dao Quang](https://github.com/dqhieuu) |  |
-|   | 01:06.790 | [link](https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_khmarbaise.java)| 21.0.1-open | [Karl Heinz Marbaise](https://github.com/khmarbaise) |  |
-|   | 01:06.944 | [link](https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_santanu.java)| 21.0.1-open | [santanu](https://github.com/santanu) |  |
-|   | 01:07.014 | [link](https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_pedestrianlove.java)| 21.0.1-open | [pedestrianlove](https://github.com/pedestrianlove) |  |
-|   | 01:07.101 | [link](https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_jeevjyot.java)| 21.0.1-open | [Jeevjyot Singh Chhabda](https://github.com/jeevjyot) |  |
-|   | 01:08.811 | [link](https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_alesj.java)| 21.0.1-open | [Aleš Justin](https://github.com/alesj) |  |
-|   | 01:08.908 | [link](https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_itaske.java)| 21.0.1-open | [itaske](https://github.com/itaske) |  |
-|   | 01:09.595 | [link](https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_agoncal.java)| 21.0.1-tem | [Antonio Goncalves](https://github.com/agoncal) |  |
-|   | 01:09.882 | [link](https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_rprabhu.java)| 21.0.1-open | [Prabhu R](https://github.com/rprabhu) |  |
-|   | 01:14.815 | [link](https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_anandmattikopp.java)| 21.0.1-open | [twohardthings](https://github.com/anandmattikopp) |  |
-|   | 01:25.801 | [link](https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_ivanklaric.java)| 21.0.1-open | [ivanklaric](https://github.com/ivanklaric) |  |
-|   | 01:33.594 | [link](https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_gnmathur.java)| 21.0.1-open | [Gaurav Mathur](https://github.com/gnmathur) |  |
-|   | 01:53.208 | [link](https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_mahadev_k.java)| java | [Mahadev K](https://github.com/mahadev-k) |  |
-|   | 01:56.607 | [link](https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_abfrmblr.java)| 21.0.1-open | [Abhilash](https://github.com/abfrmblr) |  |
-|   | 03:43.521 | [link](https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_yehwankim23.java)| 21.0.1-open | [김예환 Ye-Hwan Kim (Sam)](https://github.com/yehwankim23) |  |
-|   | 03:59.760 | [link](https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_fragmede.java)| 21.0.1-open | [Samson](https://github.com/fragmede) |  |
-|   | ---       | | | | |
-|   | 04:49.679 | [link](https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_baseline.java) (Baseline) | 21.0.1-open | [Gunnar Morling](https://github.com/gunnarmorling) |  |
-
-\* These two entries have such a similar runtime (below the error margin I can reliably measure), that they share position #1 in the leaderboar.
-
-Note that I am not super-scientific in the way I'm running the contenders
-(see [Evaluating Results](#evaluating-results) for the details).
-This is not a high-fidelity micro-benchmark and there can be variations of ~ +-5% between runs.
-So don't be too hung up on the exact ordering of your entry compared to others in close proximity.
-The primary purpose of this challenge is to learn something new, have fun along the way, and inspire others to do the same.
-The leaderboard is only means to an end for achieving this goal.
-If you observe drastically different results though, please open an issue.
-
-See [Entering the Challenge](#entering-the-challenge) for instructions how to enter the challenge with your own implementation.
-The [Show & Tell](https://github.com/gunnarmorling/1brc/discussions/categories/show-and-tell) features a wide range of 1BRC entries built using other languages, databases, and tools.
-
-### Bonus Results
-
-This section lists results from running the fastest N entries with different configurations.
-As entries have been optimized towards the specific conditions of the original challenge description and set-up
-(such as size of the key set),
-challenge entries may perform very differently across different configurations.
-These bonus results are provided here for informational purposes only.
-For the 1BRC challenge, only the results in the previous section are of importance.
-
-#### 32 Cores / 64 Threads
-
-For officially evaluating entries into the challenge, each contender is run on eight cores of the evaluation machine (AMD EPYC™ 7502P).
-Here are the results from running the top 15 entries (as of commit [2c26b511](https://github.com/gunnarmorling/1brc/commit/2c26b511e741f4d96a51dda831001946ea27a591)) on all 32 cores / 64 threads (i.e. SMT is enabled) of the machine:
-
-| # | Result (m:s.ms) | Implementation     | JDK | Submitter     | Notes     |
-|---|-----------------|--------------------|-----|---------------|-----------|
-| 1 | 00:00.799 | [link](https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_thomaswue.java)| 21.0.1-graal | [Thomas Wuerthinger](https://github.com/thomaswue) | GraalVM native binary |
-| 2 | 00:00.933 | [link](https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_royvanrijn.java)| 21.0.1-graal | [Roy van Rijn](https://github.com/royvanrijn) | GraalVM native binary |
-| 3 | 00:01.236 | [link](https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_artsiomkorzun.java)| 21.0.1-graal | [Artsiom Korzun](https://github.com/artsiomkorzun) |  |
-|   | 00:01.380 | [link](https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_merykittyunsafe.java)| 21.0.1-open | [merykittyunsafe](https://github.com/merykittyunsafe) |  |
-|   | 00:01.383 | [link](https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_cliffclick.java)| 21.0.1-open | [Cliff Click](https://github.com/cliffclick) |  |
-|   | 00:01.429 | [link](https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_iziamos.java)| 21.0.1-open | [John Ziamos](https://github.com/iziamos) |  |
-|   | 00:01.464 | [link](https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_obourgain.java)| 21.0.1-open | [Olivier Bourgain](https://github.com/obourgain) |  |
-|   | 00:01.603 | [link](https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_abeobk.java)| 21.0.1-open | [Van Phu DO](https://github.com/abeobk) |  |
-|   | 00:01.748 | [link](https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_yavuztas.java)| 21.0.1-graal | [Yavuz Tas](https://github.com/yavuztas) |  |
-|   | 00:01.778 | [link](https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_merykitty.java)| 21.0.1-open | [Quan Anh Mai](https://github.com/merykitty) |  |
-|   | 00:01.942 | [link](https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_mtopolnik.java)| 21.0.1-graal | [Marko Topolnik](https://github.com/mtopolnik) |  |
-|   | 00:01.972 | [link](https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_ebarlas.java)| 21.0.1-graal | [Elliot Barlas](https://github.com/ebarlas) |  |
-|   | 00:02.111 | [link](https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_JamalMulla.java)| 21.0.1-graal | [Jamal Mulla](https://github.com/JamalMulla) |  |
-|   | 00:02.644 | [link](https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_vaidhy.java)| 21.0.1-graal | [Vaidhy Mayilrangam](https://github.com/vaidhy) |  |
-|   | 00:03.697 | [link](https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_hundredwatt.java)| 21.0.1-graal | [Jason Nochlin](https://github.com/hundredwatt) |  |
-
-#### 10K Key Set
-
-The 1BRC challenge data set contains 413 distinct weather stations, whereas the rules allow for 10,000 different station names to occur.
-Here are the results from running the top 15 entries (as of commit [f1209f2b](https://github.com/gunnarmorling/1brc/commit/f1209f2ba8e286474f08762f9e4f161981e39cee), Jan 27) against 1,000,000,000 measurement values across 10K stations (created via _./create_measurements3.sh 1000000000_),
-using eight cores on the evaluation machine:
-
-| # | Result (m:s.ms) | Implementation     | JDK | Submitter     | Notes     |
-|---|-----------------|--------------------|-----|---------------|-----------|
-| 1 | 00:02.741 | [link](https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_artsiomkorzun.java)| 21.0.2-graal | [Artsiom Korzun](https://github.com/artsiomkorzun) | GraalVM native binary, uses Unsafe |
-| 2 | 00:04.001 | [link](https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_royvanrijn.java)| 21.0.2-graal | [Roy van Rijn](https://github.com/royvanrijn) | GraalVM native binary, uses Unsafe |
-| 3 | 00:04.516 | [link](https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_thomaswue.java)| 21.0.2-graal | [Thomas Wuerthinger](https://github.com/thomaswue), [Quan Anh Mai](https://github.com/merykitty), [Alfonso² Peterssen](https://github.com/mukel) | GraalVM native binary, uses Unsafe |
-|   | 00:04.816 | [link](https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_vemanaNonIdiomatic.java)| 21.0.1-graal | [Subrahmanyam](https://github.com/vemana) | uses Unsafe |
-|   | 00:04.848 | [link](https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_jerrinot.java)| 21.0.1-graal | [Jaromir Hamala](https://github.com/jerrinot) | uses Unsafe |
-|   | 00:05.127 | [link](https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_mtopolnik.java)| 21.0.1-graal | [Marko Topolnik](https://github.com/mtopolnik) | uses Unsafe |
-|   | 00:05.614 | [link](https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_gonix.java)| 21.0.1-open | [gonix](https://github.com/gonix) |  |
-|   | 00:05.670 | [link](https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_abeobk.java)| 21.0.2-graal | [Van Phu DO](https://github.com/abeobk) | GraalVM native binary, uses Unsafe |
-|   | 00:06.111 | [link](https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_ebarlas.java)| 21.0.1-graal | [Elliot Barlas](https://github.com/ebarlas) | uses Unsafe |
-|   | 00:06.929 | [link](https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_JamalMulla.java)| 21.0.1-graal | [Jamal Mulla](https://github.com/JamalMulla) | uses Unsafe |
-|   | 00:09.018 | [link](https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_yavuztas.java)| 21.0.1-graal | [Yavuz Tas](https://github.com/yavuztas) | uses Unsafe |
-|   | 00:10.038 | [link](https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_merykittyunsafe.java)| 21.0.1-open | [merykittyunsafe](https://github.com/merykittyunsafe) | uses Unsafe |
-|   | 00:10.197 | [link](https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_yourwass.java)| 21.0.1-open | [yourwass](https://github.com/yourwass) | uses Unsafe |
-|   | 00:12.567 | [link](https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_jparera.java)| 21.0.1-open | [Juan Parera](https://github.com/jparera) |  |
-|   | 00:12.602 | [link](https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_merykitty.java)| 21.0.1-open | [Quan Anh Mai](https://github.com/merykitty) |  |
-|   | 00:15.896 | [link](https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_jincongho.java)| 21.0.1-open | [Jin Cong Ho](https://github.com/jincongho) | uses Unsafe |
-|   | 00:18.064 | [link](https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_hundredwatt.java)| 21.0.1-graal | [Jason Nochlin](https://github.com/hundredwatt) |  |
-|   | 00:20.374 | [link](https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_roman-r-m.java)| 21.0.1-graal | [Roman Musin](https://github.com/roman-r-m) | GraalVM native binary |
-|   | ---       | | | | |
-|   | DNF | [link](https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_JesseVanRooy.java)| 21.0.1-open | [JesseVanRooy](https://github.com/JesseVanRooy) | Incorrect output |
-|   | DNF | [link](https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_iziamos.java)| 21.0.1-open | [John Ziamos](https://github.com/iziamos) | Didn't complete in 60 sec |
-|   | DNF | [link](https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_zerninv.java)| 21.0.1-graal | [zerninv](https://github.com/zerninv) | Seg fault |
-
-## Prerequisites
-
-[Java 21](https://openjdk.org/projects/jdk/21/) must be installed on your system.
-
-## Running the Challenge
-
-This repository contains two programs:
-
-* `dev.morling.onebrc.CreateMeasurements` (invoked via _create\_measurements.sh_): Creates the file _measurements.txt_ in the root directory of this project with a configurable number of random measurement values
-* `dev.morling.onebrc.CalculateAverage` (invoked via _calculate\_average\_baseline.sh_): Calculates the average values for the file _measurements.txt_
-
-Execute the following steps to run the challenge:
-
-1. Build the project using Apache Maven:
-
-    ```
-    ./mvnw clean verify
-    ```
-
-2. Create the measurements file with 1B rows (just once):
-
-    ```
-    ./create_measurements.sh 1000000000
-    ```
-
-    This will take a few minutes.
-    **Attention:** the generated file has a size of approx. **12 GB**, so make sure to have enough diskspace.
-
-    If you're running the challenge with a non-Java language, there's a non-authoritative Python script to generate the measurements file at `src/main/python/create_measurements.py`. The authoritative method for generating the measurements is the Java program `dev.morling.onebrc.CreateMeasurements`.
-
-3. Calculate the average measurement values:
-
-    ```
-    ./calculate_average_baseline.sh
-    ```
-
-    The provided naive example implementation uses the Java streams API for processing the file and completes the task in ~2 min on environment used for [result evaluation](#evaluating-results).
-    It serves as the base line for comparing your own implementation.
-
-4. Optimize the heck out of it:
-
-    Adjust the `CalculateAverage` program to speed it up, in any way you see fit (just sticking to a few rules described below).
-    Options include parallelizing the computation, using the (incubating) Vector API, memory-mapping different sections of the file concurrently, using AppCDS, GraalVM, CRaC, etc. for speeding up the application start-up, choosing and tuning the garbage collector, and much more.
-
-## Flamegraph/Profiling
-
-A tip is that if you have [jbang](https://jbang.dev) installed, you can get a flamegraph of your program by running
-[async-profiler](https://github.com/jvm-profiling-tools/async-profiler) via [ap-loader](https://github.com/jvm-profiling-tools/ap-loader):
-
-`jbang --javaagent=ap-loader@jvm-profiling-tools/ap-loader=start,event=cpu,file=profile.html -m dev.morling.onebrc.CalculateAverage_yourname target/average-1.0.0-SNAPSHOT.jar`
-
-or directly on the .java file:
-
-`jbang --javaagent=ap-loader@jvm-profiling-tools/ap-loader=start,event=cpu,file=profile.html src/main/java/dev/morling/onebrc/CalculateAverage_yourname`
-
-When you run this, it will generate a flamegraph in profile.html. You can then open this in a browser and see where your program is spending its time.
-
-## Rules and limits
-
-* Any of these Java distributions may be used:
-    * Any builds provided by [SDKMan](https://sdkman.io/jdks)
-    * Early access builds available on openjdk.net may be used (including EA builds for OpenJDK projects like Valhalla)
-    * Builds on [builds.shipilev.net](https://builds.shipilev.net/openjdk-jdk-lilliput/)
-If you want to use a build not available via these channels, reach out to discuss whether it can be considered.
-* No external library dependencies may be used
-* Implementations must be provided as a single source file
-* The computation must happen at application _runtime_, i.e. you cannot process the measurements file at _build time_
-(for instance, when using GraalVM) and just bake the result into the binary
-* Input value ranges are as follows:
-    * Station name: non null UTF-8 string of min length 1 character and max length 100 bytes, containing neither `;` nor `\n` characters. (i.e. this could be 100 one-byte characters, or 50 two-byte characters, etc.)
-    * Temperature value: non null double between -99.9 (inclusive) and 99.9 (inclusive), always with one fractional digit
-* There is a maximum of 10,000 unique station names
-* Line endings in the file are `\n` characters on all platforms
-* Implementations must not rely on specifics of a given data set, e.g. any valid station name as per the constraints above and any data distribution (number of measurements per station) must be supported
-* The rounding of output values must be done using the semantics of IEEE 754 rounding-direction "roundTowardPositive"
-
-## Entering the Challenge
-
-To submit your own implementation to 1BRC, follow these steps:
-
-* Create a fork of the [onebrc](https://github.com/gunnarmorling/onebrc/) GitHub repository.
-* Run `./create_fork.sh <your_GH_user>` to copy the baseline implementation to your personal files, or do this manually:
-  * Create a copy of _CalculateAverage\_baseline.java_, named _CalculateAverage\_<your_GH_user>.java_, e.g. _CalculateAverage\_doloreswilson.java_.
-  * Create a copy of _calculate\_average\_baseline.sh_, named _calculate\_average\_<your_GH_user>.sh_, e.g. _calculate\_average\_doloreswilson.sh_.
-  * Adjust that script so that it references your implementation class name. If needed, provide any JVM arguments via the `JAVA_OPTS` variable in that script.
-    Make sure that script does not write anything to standard output other than calculation results.
-  * (Optional) OpenJDK 21 is used by default. If a custom JDK build is required, create a copy of _prepare\_baseline.sh_, named _prepare\_<your_GH_user>.sh_, e.g. _prepare\_doloreswilson.sh_. Include the SDKMAN command `sdk use java [version]` in the your prepare script.
-  * (Optional) If you'd like to use native binaries (GraalVM), add all the required build logic to your _prepare\_<your_GH_user>.sh_ script.
-* Make that implementation fast. Really fast.
-* Run the test suite by executing _/test.sh <your_GH_user>_; if any differences are reported, fix them before submitting your implementation.
-* Create a pull request against the upstream repository, clearly stating
-  * The name of your implementation class.
-  * The execution time of the program on your system and specs of the same (CPU, number of cores, RAM). This is for informative purposes only, the official runtime will be determined as described below.
-* I will run the program and determine its performance as described in the next section, and enter the result to the scoreboard.
-
-**Note:** I reserve the right to not evaluate specific submissions if I feel doubtful about the implementation (I.e. I won't run your Bitcoin miner ;).
-
-If you'd like to discuss any potential ideas for implementing 1BRC with the community,
-you can use the [GitHub Discussions](https://github.com/gunnarmorling/onebrc/discussions) of this repository.
-Please keep it friendly and civil.
-
-The challenge runs until Jan 31 2024.
-Any submissions (i.e. pull requests) created after Jan 31 2024 23:59 UTC will not be considered.
-
-## Evaluating Results
-
-Results are determined by running the program on a [Hetzner AX161](https://www.hetzner.com/dedicated-rootserver/ax161) dedicated server (32 core AMD EPYC™ 7502P (Zen2), 128 GB RAM).
-
-Programs are run from  a RAM disk (i.o. the IO overhead for loading the file from disk is not relevant), using 8 cores of the machine.
-Each contender must pass the 1BRC test suite (_/test.sh_).
-The `hyperfine` program is used for measuring execution times of the launch scripts of all entries, i.e. end-to-end times are measured.
-Each contender is run five times in a row.
-The slowest and the fastest runs are discarded.
-The mean value of the remaining three runs is the result for that contender and will be added to the results table above.
-The exact same _measurements.txt_ file is used for evaluating all contenders.
-See the script _evaluate.sh_ for the exact implementation of the evaluation steps.
-
-## Prize
-
-If you enter this challenge, you may learn something new, get to inspire others, and take pride in seeing your name listed in the scoreboard above.
-Rumor has it that the winner may receive a unique 1️⃣🐝🏎️ t-shirt, too!
-
-## FAQ
-
-_Q: Can I use Kotlin or other JVM languages other than Java?_\
-A: No, this challenge is focussed on Java only. Feel free to inofficially share implementations significantly outperforming any listed results, though.
-
-_Q: Can I use non-JVM languages and/or tools?_\
-A: No, this challenge is focussed on Java only. Feel free to inofficially share interesting implementations and results though. For instance it would be interesting to see how DuckDB fares with this task.
-
-_Q: I've got an implementation—but it's not in Java. Can I share it somewhere?_\
-A: Whilst non-Java solutions cannot be formally submitted to the challenge, you are welcome to share them over in the [Show and tell](https://github.com/gunnarmorling/1brc/discussions/categories/show-and-tell) GitHub discussion area.
-
-_Q: Can I use JNI?_\
-A: Submissions must be completely implemented in Java, i.e. you cannot write JNI glue code in C/C++. You could use AOT compilation of Java code via GraalVM though, either by AOT-compiling the entire application, or by creating a native library (see [here](https://www.graalvm.org/22.0/reference-manual/native-image/ImplementingNativeMethodsInJavaWithSVM/).
-
-_Q: What is the encoding of the measurements.txt file?_\
-A: The file is encoded with UTF-8.
-
-_Q: Can I make assumptions on the names of the weather stations showing up in the data set?_\
-A: No, while only a fixed set of station names is used by the data set generator, any solution should work with arbitrary UTF-8 station names
-(for the sake of simplicity, names are guaranteed to contain no `;` or `\n` characters).
-
-_Q: Can I copy code from other submissions?_\
-A: Yes, you can. The primary focus of the challenge is about learning something new, rather than "winning". When you do so, please give credit to the relevant source submissions. Please don't re-submit other entries with no or only trivial improvements.
-
-_Q: Which operating system is used for evaluation?_\
-A: Fedora 39.
-
-_Q: My solution runs in 2 sec on my machine. Am I the fastest 1BRC-er in the world?_\
-A: Probably not :) 1BRC results are reported in wallclock time, thus results of different implementations are only comparable when obtained on the same machine. If for instance an implementation is faster on a 32 core workstation than on the 8 core evaluation instance, this doesn't allow for any conclusions. When sharing 1BRC results, you should also always share the result of running the baseline implementation on the same hardware.
-
-_Q: Why_ 1️⃣🐝🏎️ _?_\
-A: It's the abbreviation of the project name: **One** **B**illion **R**ow **C**hallenge.
-
-## 1BRC on the Web
-
-A list of external resources such as blog posts and videos, discussing 1BRC and specific implementations:
-
-* [The One Billion Row Challenge Shows That Java Can Process a One Billion Rows File in Two Seconds ](https://www.infoq.com/news/2024/01/1brc-fast-java-processing), by Olimpiu Pop (interview)
-* [Cliff Click discussing his 1BRC solution on the Coffee Compiler Club](https://www.youtube.com/watch?v=NJNIbgV6j-Y) (video)
-* [1️⃣🐝🏎️🦆 (1BRC in SQL with DuckDB)](https://rmoff.net/2024/01/03/1%EF%B8%8F%E2%83%A3%EF%B8%8F-1brc-in-sql-with-duckdb/), by Robin Moffatt (blog post)
-* [1 billion rows challenge in PostgreSQL and ClickHouse](https://ftisiot.net/posts/1brows/), by Francesco Tisiot (blog post)
-* [The One Billion Row Challenge with Snowflake](https://medium.com/snowflake/the-one-billion-row-challenge-with-snowflake-f612ae76dbd5), by Sean Falconer (blog post)
-* [One billion row challenge using base R](https://www.r-bloggers.com/2024/01/one-billion-row-challenge-using-base-r/), by  David Schoch (blog post)
-* [1 Billion Row Challenge with Apache Pinot](https://hubertdulay.substack.com/p/1-billion-row-challenge-in-apache), by Hubert Dulay (blog post)
-* [One Billion Row Challenge In C](https://www.dannyvankooten.com/blog/2024/1brc/), by Danny Van Kooten (blog post)
-* [One Billion Row Challenge in Racket](https://defn.io/2024/01/10/one-billion-row-challenge-in-racket/), by Bogdan Popa (blog post)
-* [The One Billion Row Challenge - .NET Edition](https://dev.to/mergeconflict/392-the-one-billion-row-challenge-net-edition), by Frank A. Krueger (podcast)
-* [One Billion Row Challenge](https://curiouscoding.nl/posts/1brc/), by Ragnar Groot Koerkamp (blog post)
-* [ClickHouse and The One Billion Row Challenge](https://clickhouse.com/blog/clickhouse-one-billion-row-challenge), by Dale McDiarmid (blog post)
-* [One Billion Row Challenge & Azure Data Explorer](https://nielsberglund.com/post/2024-01-28-one-billion-row-challenge--azure-data-explorer/), by Niels Berglund (blog post)
-* [One Billion Row Challenge - view from sidelines](https://www.chashnikov.dev/post/one-billion-row-challenge-view-from-sidelines), by Leo Chashnikov (blog post)
-
-## Sponsorship
-
-A big thank you to my employer [Decodable](https://www.decodable.co/) for funding the evaluation environment and supporting this challenge!
- 
-## License
-
-This code base is available under the Apache License, version 2.
-
-## Code of Conduct
-
-Be excellent to each other!
-More than winning, the purpose of this challenge is to have fun and learn something new.
+```sh
+# use string 
+Benchmark 1: jbang src/main/java/dev/morling/onebrc/CalculateAverage_martin2038.java 
+  Time (mean ± σ):      5.756 s ±  0.121 s    [User: 46.685 s, System: 1.443 s]
+  Range (min … max):    5.519 s …  5.957 s    10 runs
+
+# use calculateHash
+Benchmark 1: jbang src/main/java/dev/morling/onebrc/CalculateAverage_martin2038.java 
+  Time (mean ± σ):      5.253 s ±  0.128 s    [User: 42.004 s, System: 1.453 s]
+  Range (min … max):    5.076 s …  5.482 s    10 runs
+
+# use FNV1a , save about 100ms
+Benchmark 1: jbang src/main/java/dev/morling/onebrc/CalculateAverage_martin2038.java 
+  Time (mean ± σ):      5.159 s ±  0.176 s    [User: 41.492 s, System: 1.431 s]
+  Range (min … max):    4.976 s …  5.543 s    10 runs 
+```
